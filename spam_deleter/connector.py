@@ -45,7 +45,7 @@ def _google_refresh_token(config: "Config") -> str:
         refresh_token=config.oauth2_refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=config.oauth2_client_id,
-        client_secret=config.oauth2_secret,
+        client_secret=config.oauth2_client_secret,
         scopes=["https://mail.google.com/"],
     )
     creds.refresh(Request())
@@ -61,7 +61,7 @@ def _microsoft_refresh_token(config: "Config") -> str:
     app = msal.ConfidentialClientApplication(
         config.oauth2_client_id,
         authority="https://login.microsoftonline.com/common",
-        client_credential=config.oauth2_secret,
+        client_credential=config.oauth2_client_secret,
     )
     result = app.acquire_token_by_refresh_token(
         config.oauth2_refresh_token,
