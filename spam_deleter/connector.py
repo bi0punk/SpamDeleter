@@ -1,5 +1,6 @@
 import imaplib
 import base64
+import ssl
 
 
 def connect(config: "Config") -> imaplib.IMAP4_SSL:
@@ -9,14 +10,16 @@ def connect(config: "Config") -> imaplib.IMAP4_SSL:
 
 
 def _connect_password(config: "Config") -> imaplib.IMAP4_SSL:
-    mail = imaplib.IMAP4_SSL(config.imap_host, config.imap_port)
+    context = ssl.create_default_context()
+    mail = imaplib.IMAP4_SSL(config.imap_host, config.imap_port, ssl_context=context)
     mail.login(config.email, config.password)
     return mail
 
 
 def _connect_oauth2(config: "Config") -> imaplib.IMAP4_SSL:
     token = _get_oauth2_token(config)
-    mail = imaplib.IMAP4_SSL(config.imap_host, config.imap_port)
+    context = ssl.create_default_context()
+    mail = imaplib.IMAP4_SSL(config.imap_host, config.imap_port, ssl_context=context)
     auth_string = f"user={config.email}\x01auth=Bearer {token}\x01\x01"
     mail.authenticate("XOAUTH2", lambda _: base64.b64encode(auth_string.encode()).decode())
     return mail
