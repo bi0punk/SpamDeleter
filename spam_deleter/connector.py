@@ -1,6 +1,12 @@
+from __future__ import annotations
+
 import imaplib
 import base64
 import ssl
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import Config
 
 
 def connect(config: "Config") -> imaplib.IMAP4_SSL:

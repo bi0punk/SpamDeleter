@@ -1,7 +1,6 @@
 import os
 import argparse
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from dotenv import load_dotenv
 
 load_dotenv()

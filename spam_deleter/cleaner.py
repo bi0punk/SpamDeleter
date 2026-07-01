@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 import time
 from email import message_from_bytes
+from typing import TYPE_CHECKING
+
 from .connector import connect
 from .logger import SpamLogger
+
+if TYPE_CHECKING:
+    from .config import Config
 
 
 def clean_spam(config: "Config", log: SpamLogger) -> None:
