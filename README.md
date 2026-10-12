@@ -1,24 +1,23 @@
 # SpamDeleter
 
+CLI tool que elimina automáticamente correos de la carpeta SPAM vía IMAP. Soporta Gmail, Outlook, Yahoo y cualquier servidor IMAP con autenticación básica u OAuth2.
+
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)](https://python.org)
-[![CI](https://github.com/drbash/SpamDeleter/actions/workflows/ci.yml/badge.svg)](https://github.com/drbash/SpamDeleter/actions)
-
-CLI tool que elimina automáticamente correos de la carpeta SPAM vía IMAP. Soporta Gmail, Outlook, Yahoo y cualquier servidor IMAP con autenticación básica u OAuth2.
+[![CI](https://github.com/bi0punk/SpamDeleter/actions/workflows/ci.yml/badge.svg)](https://github.com/bi0punk/SpamDeleter/actions)
 
 ## Contenido
 
-- [Características](#caracter%C3%ADsticas)
+- [Características](#características)
+- [Arquitectura](#arquitectura)
 - [Stack](#stack)
-- [Estructura](#estructura)
-- [Requisitos](#requisitos)
-- [Instalación](#instalaci%C3%B3n)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Instalación](#instalación)
 - [Uso](#uso)
-- [Tests](#tests)
-- [Configuración](#configuraci%C3%B3n)
-- [CI/CD](#cicd)
+- [Configuración](#configuración)
+- [Tests / CI](#tests--ci)
 - [Logs](#logs)
-- [Limitaciones / Roadmap](#limitaciones--roadmap)
+- [Roadmap](#roadmap)
 - [Licencia](#licencia)
 
 ## Características
@@ -30,6 +29,22 @@ CLI tool que elimina automáticamente correos de la carpeta SPAM vía IMAP. Sopo
 - **Logging detallado**: registro de cada acción con timestamp
 - **Dry-run seguro**: lista correos sin borrarlos
 
+## Arquitectura
+
+```mermaid
+flowchart TD
+  CLI[python -m spam_deleter] --> C[config.py: args + .env]
+  CLI --> S[scheduler.py: loop con schedule / modo once]
+  S --> CL[cleaner.py]
+  CL --> CN[connector.py]
+  CN -->|básica: imaplib.login| IMAP[Servidor IMAP 993 TLS]
+  CN -->|XOAUTH2: Google o Microsoft| IMAP
+  IMAP -->|search ALL en carpeta SPAM| CL
+  CL -->|BODY.PEEK header FROM/SUBJECT| L[logger.py]
+  L --> LOG[spam_deleter.log + consola]
+  CL -->|dry_run o +FLAGS Deleted + expunge| IMAP
+```
+
 ## Stack
 
 | Componente | Tecnología |
@@ -40,7 +55,7 @@ CLI tool que elimina automáticamente correos de la carpeta SPAM vía IMAP. Sopo
 | OAuth2 (opt) | `google-auth-oauthlib`, `msal` |
 | Testing | pytest |
 
-## Estructura
+## Estructura del repositorio
 
 ```
 SpamDeleter/
@@ -53,18 +68,14 @@ SpamDeleter/
 │   ├── logger.py            # Logger formateado
 │   └── scheduler.py         # Loop con schedule
 ├── tests/
+│   └── test_smoke.py
 ├── .env.example
-├── .github/workflows/ci.yml
+├── .github/workflows/
+│   └── ci.yml
 ├── pyproject.toml
 ├── requirements.txt
 └── README.md
 ```
-
-## Requisitos
-
-- Python 3.10+
-- Servidor IMAP accesible desde la red
-- Para OAuth2: credenciales de aplicación en Google/Microsoft
 
 ## Instalación
 
@@ -78,6 +89,8 @@ Para OAuth2 (opcional):
 pip install google-auth-oauthlib    # Google
 pip install msal                     # Microsoft
 ```
+
+Requisitos: Python 3.10+, servidor IMAP accesible desde la red y, para OAuth2, credenciales de aplicación en Google/Microsoft.
 
 ## Uso
 
@@ -98,12 +111,7 @@ python -m spam_deleter --interval 6h
 python -m spam_deleter --provider outlook
 ```
 
-## Tests
-
-```bash
-pip install pytest
-pytest tests/ -v
-```
+También se instala el ejecutable `spam-deleter` definido en `pyproject.toml`.
 
 ## Configuración
 
@@ -114,20 +122,27 @@ Copia `.env.example` a `.env` y completa tus credenciales:
 ```env
 PROVIDER=gmail
 EMAIL=tu@email.com
-PASSWORD=tu_app_password
+PASSWORD=tu_contraseña_o_app_password
 ```
 
 ### OAuth2 (alternativa más segura)
 
 ```env
 OAUTH2_ENABLED=true
-OAUTH2_PROVIDER=google
+OAUTH2_PROVIDER=google       # google | microsoft
 OAUTH2_CLIENT_ID=xxx
 OAUTH2_CLIENT_SECRET=xxx
 OAUTH2_REFRESH_TOKEN=xxx
 ```
 
-## CI/CD
+Otras variables opcionales: `INTERVAL` (intervalo por defecto, ej. `1h`), `IMAP_SERVER`/`IMAP_PORT` (si `PROVIDER=custom`), `SPAM_FOLDER` (por defecto Gmail `[Gmail]/Spam`, Outlook `Junk`, Yahoo `Bulk Mail`), `LOG_FILE`.
+
+## Tests / CI
+
+```bash
+pip install pytest
+pytest tests/ -v
+```
 
 GitHub Actions ejecuta lint (Ruff) y tests (pytest) en cada push/PR a main/master.
 
@@ -140,7 +155,7 @@ Cada acción se registra en `spam_deleter.log`:
 2026-05-28 10:00:01 | SUMMARY | gmail | Eliminados: 12 correos en 0.30s
 ```
 
-## Limitaciones / Roadmap
+## Roadmap
 
 - [x] Soporte multi-proveedor (Gmail, Outlook, Yahoo, IMAP)
 - [x] OAuth2 para Google y Microsoft
