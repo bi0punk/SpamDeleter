@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import imaplib
 import base64
+import imaplib
 import ssl
 from typing import TYPE_CHECKING
 
@@ -9,29 +9,29 @@ if TYPE_CHECKING:
     from .config import Config
 
 
-def connect(config: "Config") -> imaplib.IMAP4_SSL:
+def connect(config: Config) -> imaplib.IMAP4_SSL:
     if config.oauth2_enabled:
         return _connect_oauth2(config)
     return _connect_password(config)
 
 
-def _connect_password(config: "Config") -> imaplib.IMAP4_SSL:
+def _connect_password(config: Config) -> imaplib.IMAP4_SSL:
     context = ssl.create_default_context()
     mail = imaplib.IMAP4_SSL(config.imap_host, config.imap_port, ssl_context=context)
     mail.login(config.email, config.password)
     return mail
 
 
-def _connect_oauth2(config: "Config") -> imaplib.IMAP4_SSL:
+def _connect_oauth2(config: Config) -> imaplib.IMAP4_SSL:
     token = _get_oauth2_token(config)
     context = ssl.create_default_context()
     mail = imaplib.IMAP4_SSL(config.imap_host, config.imap_port, ssl_context=context)
     auth_string = f"user={config.email}\x01auth=Bearer {token}\x01\x01"
-    mail.authenticate("XOAUTH2", lambda _: base64.b64encode(auth_string.encode()).decode())
+    mail.authenticate("XOAUTH2", lambda _: base64.b64encode(auth_string.encode()))
     return mail
 
 
-def _get_oauth2_token(config: "Config") -> str:
+def _get_oauth2_token(config: Config) -> str:
     prov = config.oauth2_provider.lower()
 
     if prov == "google":
@@ -42,12 +42,14 @@ def _get_oauth2_token(config: "Config") -> str:
         raise ValueError(f"OAuth2 provider '{prov}' no soportado. Usa 'google' o 'microsoft'.")
 
 
-def _google_refresh_token(config: "Config") -> str:
+def _google_refresh_token(config: Config) -> str:
     try:
-        from google.oauth2.credentials import Credentials
         from google.auth.transport.requests import Request
+        from google.oauth2.credentials import Credentials
     except ImportError:
-        raise SystemExit("google-auth-oauthlib requerido para OAuth2 con Google. pip install google-auth-oauthlib")
+        raise SystemExit(
+            "google-auth-oauthlib requerido para OAuth2 con Google. pip install google-auth-oauthlib"
+        ) from None
 
     creds = Credentials(
         token=None,
@@ -61,11 +63,11 @@ def _google_refresh_token(config: "Config") -> str:
     return creds.token
 
 
-def _microsoft_refresh_token(config: "Config") -> str:
+def _microsoft_refresh_token(config: Config) -> str:
     try:
         import msal
     except ImportError:
-        raise SystemExit("msal requerido para OAuth2 con Microsoft. pip install msal")
+        raise SystemExit("msal requerido para OAuth2 con Microsoft. pip install msal") from None
 
     app = msal.ConfidentialClientApplication(
         config.oauth2_client_id,
@@ -77,5 +79,7 @@ def _microsoft_refresh_token(config: "Config") -> str:
         scopes=["https://outlook.office.com/IMAP.AccessAsUser.All"],
     )
     if "access_token" not in result:
-        raise RuntimeError(f"Error obteniendo token Microsoft: {result.get('error_description', result)}")
+        raise RuntimeError(
+            f"Error obteniendo token Microsoft: {result.get('error_description', result)}"
+        )
     return result["access_token"]

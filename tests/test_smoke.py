@@ -17,4 +17,5 @@ def test_env_example():
 
 def test_cli_import():
     import importlib
+
     importlib.import_module("spam_deleter")

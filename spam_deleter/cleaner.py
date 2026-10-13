@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from email import message_from_bytes
 from typing import TYPE_CHECKING
 
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
     from .config import Config
 
 
-def clean_spam(config: "Config", log: SpamLogger) -> None:
+def clean_spam(config: Config, log: SpamLogger) -> None:
     log.info("Conectando a %s como %s ...", config.provider, config.email)
     try:
         mail = connect(config)
@@ -65,7 +66,7 @@ def clean_spam(config: "Config", log: SpamLogger) -> None:
             pass
 
 
-def _parse_envelope(msg_data: list[bytes]) -> tuple[str, str]:
+def _parse_envelope(msg_data: Sequence[object]) -> tuple[str, str]:
     sender = "(desconocido)"
     subject = "(sin asunto)"
     try:

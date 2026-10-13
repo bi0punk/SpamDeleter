@@ -1,7 +1,9 @@
-import schedule
 import time
-from .config import Config
+
+import schedule
+
 from .cleaner import clean_spam
+from .config import Config
 from .logger import SpamLogger
 
 

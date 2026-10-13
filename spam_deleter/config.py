@@ -1,11 +1,19 @@
 import os
-import argparse
+from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
+from typing import TypedDict
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-PROVIDERS = {
+
+class _Provider(TypedDict):
+    host: str | None
+    port: int
+
+
+PROVIDERS: dict[str, _Provider] = {
     "gmail": {"host": "imap.gmail.com", "port": 993},
     "outlook": {"host": "outlook.office365.com", "port": 993},
     "yahoo": {"host": "imap.mail.yahoo.com", "port": 993},
@@ -32,8 +40,8 @@ class Config:
     oauth2_refresh_token: str = ""
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(
+def parse_args(argv: list[str] | None = None) -> Namespace:
+    p = ArgumentParser(
         prog="spam_deleter",
         description="Elimina correos de la carpeta SPAM automáticamente.",
     )
@@ -42,10 +50,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.getenv("INTERVAL", "1h"),
         help="Intervalo entre limpiezas (ej: 30m, 2h, 1d). Default: 1h",
     )
-    p.add_argument("--once", action="store_true", default=False, help="Ejecutar una sola vez y salir")
-    p.add_argument("--dry-run", action="store_true", default=False, help="Solo listar correos sin borrar")
-    p.add_argument("--provider", default=os.getenv("PROVIDER", ""), help="Proveedor (gmail, outlook, yahoo, custom)")
-    p.add_argument("--log-file", default=os.getenv("LOG_FILE", "spam_deleter.log"), help="Ruta del archivo de log")
+    p.add_argument(
+        "--once", action="store_true", default=False, help="Ejecutar una sola vez y salir"
+    )
+    p.add_argument(
+        "--dry-run", action="store_true", default=False, help="Solo listar correos sin borrar"
+    )
+    p.add_argument(
+        "--provider",
+        default=os.getenv("PROVIDER", ""),
+        help="Proveedor (gmail, outlook, yahoo, custom)",
+    )
+    p.add_argument(
+        "--log-file",
+        default=os.getenv("LOG_FILE", "spam_deleter.log"),
+        help="Ruta del archivo de log",
+    )
     return p.parse_args(argv)
 
 
@@ -72,7 +92,9 @@ def build_config(argv: list[str] | None = None) -> Config:
         email=os.getenv("EMAIL", ""),
         password=os.getenv("PASSWORD", ""),
         provider=provider,
-        imap_host=args.provider if provider == "custom" and args.provider else (os.getenv("IMAP_SERVER") or prov["host"] or ""),
+        imap_host=args.provider
+        if provider == "custom" and args.provider
+        else (os.getenv("IMAP_SERVER") or prov["host"] or ""),
         imap_port=int(os.getenv("IMAP_PORT") or prov["port"]),
         spam_folder=os.getenv("SPAM_FOLDER", _default_spam_folder(provider)),
         interval_seconds=parse_interval(args.interval),
@@ -108,4 +130,6 @@ def _validate(cfg: Config) -> None:
     if not cfg.imap_host:
         missing.append("IMAP_SERVER")
     if missing:
-        raise SystemExit(f"Faltan variables requeridas: {', '.join(missing)}. Revisa tu archivo .env")
+        raise SystemExit(
+            f"Faltan variables requeridas: {', '.join(missing)}. Revisa tu archivo .env"
+        )
